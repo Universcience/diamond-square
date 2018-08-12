@@ -100,8 +100,8 @@ void export (char* filename, height* hmap, int side)
 {
 	// Clamping check
 	height h = 0.0,
-	 minh =  INIT_AMP,
-	 maxh = -INIT_AMP;
+	minh =  INIT_AMP,
+	maxh = -INIT_AMP;
 	for (int x = 0 ; x < side ; x++)
 		for (int y = 0 ; y < side ; y++)
 		{
@@ -121,6 +121,7 @@ void export (char* filename, height* hmap, int side)
 			fprintf(of, "%i ", (int) (hmap[Ind(x,y)] - minh));
 		fprintf(of, "\n");
 	}
+	fclose(of);
 }
 
 int main ()
@@ -192,6 +193,10 @@ int main ()
 	}
 
 	export ("data-final.pgm", hmap, side);
+
+#ifndef SKIP_STEPS
+	free(outfile);
+#endif
 
 	return EXIT_SUCCESS;
 }

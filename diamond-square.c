@@ -1,5 +1,5 @@
 /*  Quick and dirty implementation of the diamond-square algorithm.
- *  Copyright (C) 2017-2018 - Jérôme Kirman
+ *  Copyright (C) 2017-2019 - Jérôme Kirman
  *
  *  This program is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU Affero General Public License as published by
@@ -71,24 +71,28 @@
 
 #define MAX_ITER 10
 
-typedef float height;
+typedef double height;
 #define AMP_STEP_FACTOR 0.5
 #define INIT_AMP 2048.0
 
+height random_height_delta (height amplitude);
+void display_hmap (height* hmap, size_t side);
+void export (const char* filename, height* hmap, size_t side);
+
 height random_height_delta (height amplitude)
 {
-	return ((float) rand() / RAND_MAX - 0.5) * amplitude;
+	return (rand() / (height) RAND_MAX - 0.5) * amplitude;
 }
 
 #define Ind(x,y) ( (x)*side + (y) )
 
 // Export functions :
 // -> stdout
-void display_hmap (height* hmap, int side)
+void display_hmap (height* hmap, size_t side)
 {
-	for (int x = 0 ; x < side ; x++)
+	for (size_t x = 0 ; x < side ; ++x)
 	{
-		for (int y = 0 ; y < side ; y++)
+		for (size_t y = 0 ; y < side ; ++y)
 			printf ("%i\t", (int) hmap[Ind(x,y)]);
 		printf ("\n");
 	}
@@ -96,14 +100,14 @@ void display_hmap (height* hmap, int side)
 }
 
 // -> PGM file
-void export (char* filename, height* hmap, int side)
+void export (const char* filename, height* hmap, size_t side)
 {
 	// Clamping check
-	height h = 0.0,
-	minh =  INIT_AMP,
-	maxh = -INIT_AMP;
-	for (int x = 0 ; x < side ; x++)
-		for (int y = 0 ; y < side ; y++)
+	height h =  0.0,
+	    minh =  INIT_AMP,
+	    maxh = -INIT_AMP;
+	for (size_t x = 0 ; x < side ; ++x)
+		for (size_t y = 0 ; y < side ; ++y)
 		{
 			h = hmap[Ind(x,y)];
 			if (h < minh) { minh = h; }
@@ -113,46 +117,46 @@ void export (char* filename, height* hmap, int side)
 	// Save as PGM
 	FILE* of = fopen(filename, "w+");
 	fprintf(of, "P2\n");
-	fprintf(of, "%i %i\n", side, side);
+	fprintf(of, "%lu %lu\n", side, side);
 	fprintf(of, "%i\n", (int) (maxh-minh));
-	for (int x = 0 ; x < side ; x++)
+	for (size_t x = 0 ; x < side ; ++x)
 	{
-		for (int y = 0 ; y < side ; y++)
+		for (size_t y = 0 ; y < side ; ++y)
 			fprintf(of, "%i ", (int) (hmap[Ind(x,y)] - minh));
 		fprintf(of, "\n");
 	}
 	fclose(of);
 }
 
-int main ()
+int main (void)
 {
-	srand(time(NULL));
+	srand((unsigned) time(NULL));
 #ifndef SKIP_STEPS
 #define FILELEN 12
 	char* outfile = calloc(FILELEN, sizeof(char));
 #endif
 
 	// Generate heightmap
-	int side = 2;
+	size_t side = 2;
 	height* hmap = calloc(sizeof(height), side*side);
-	for (int c = 0 ; c < side*side ; c++)
+	for (size_t c = 0 ; c < side*side ; ++c)
 		hmap[c] = 0.0;
 
 	height amplitude = INIT_AMP;
 
-	for (int i = 0 ; i < MAX_ITER ; i++)
+	for (int i = 0 ; i < MAX_ITER ; ++i)
 	{
 		side = 2*side - 1;
 		hmap = realloc(hmap, sizeof(height) * side*side);
 
 		// Zoom step (proceeding from bottom-right to avoid data loss)
-		for (int x = side/2 ; x >= 0  ; x--)
-			for (int y = side/2 ; y >= 0 ; y--)
+		for (size_t x = side/2 ; x != (size_t) -1  ; --x)
+			for (size_t y = side/2 ; y != (size_t) -1 ; --y)
 				hmap[Ind(2*x,2*y)] = hmap[x*(side/2+1) + y];
 
 		// Diamond step
-		for (int x = 0 ; x < side/2 ; x++)
-			for (int y = 0 ; y < side/2 ; y++)
+		for (size_t x = 0 ; x < side/2 ; ++x)
+			for (size_t y = 0 ; y < side/2 ; ++y)
 				hmap[Ind(2*x+1, 2*y+1)] =
 				( hmap[Ind( 2*x , 2*y )] + hmap[Ind(2*x+2, 2*y )] +
 				  hmap[Ind( 2*x ,2*y+2)] + hmap[Ind(2*x+2,2*y+2)] ) / 4
@@ -160,8 +164,8 @@ int main ()
 
 #ifndef SKIP_STEPS
 		// Cleanup intermediate data for diamond step output.
-		for (int x = 0 ; x < side ; x++)
-			for (int y = 0 ; y < side ; y++)
+		for (size_t x = 0 ; x < side ; ++x)
+			for (size_t y = 0 ; y < side ; ++y)
 				if ( (x+y) % 2 != 0 )
 					hmap[Ind(x,y)] =
 					( ( y ==    0   ? 0.0 : hmap[Ind( x ,y-1)] ) +
@@ -174,8 +178,8 @@ int main ()
 #endif
 
 		// Square step
-		for (int x = 0 ; x < side ; x++)
-			for (int y = 0 ; y < side ; y++)
+		for (size_t x = 0 ; x < side ; ++x)
+			for (size_t y = 0 ; y < side ; ++y)
 				if ( (x+y) % 2 != 0 ) // Surface oddity
 					hmap[Ind(x,y)] =
 					( ( y ==    0   ? 0.0 : hmap[Ind( x ,y-1)] ) +

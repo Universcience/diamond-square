@@ -197,6 +197,7 @@ int main (void)
 	}
 
 	export ("data-final.pgm", hmap, side);
+	free (hmap);
 
 #ifndef SKIP_STEPS
 	free(outfile);
